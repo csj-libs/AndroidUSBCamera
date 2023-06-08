@@ -101,14 +101,16 @@ object CameraUtils {
      * @return true find success
      */
     fun isFilterDevice(context: Context?, usbDevice: UsbDevice?): Boolean {
-        return DeviceFilter.getDeviceFilters(context, R.xml.default_device_filter)
-            .find { devFilter ->
+        return isFilterDevice(DeviceFilter.getDeviceFilters(context, R.xml.default_device_filter),usbDevice)
+    }
+    fun isFilterDevice(filterList: List<DeviceFilter>?, usbDevice: UsbDevice?): Boolean {
+        return filterList
+            ?.find { devFilter ->
                 devFilter.mProductId == usbDevice?.productId && devFilter.mVendorId == usbDevice.vendorId
             }.let { dev ->
                 dev != null
             }
     }
-
     fun hasAudioPermission(ctx: Context): Boolean{
         val locPermission = ContextCompat.checkSelfPermission(ctx, Manifest.permission.RECORD_AUDIO)
         return locPermission == PackageManager.PERMISSION_GRANTED

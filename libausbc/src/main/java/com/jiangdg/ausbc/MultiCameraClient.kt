@@ -36,6 +36,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingDeque
+import kotlin.collections.ArrayList
 import kotlin.math.abs
 
 /** Multi-road camera client
@@ -45,11 +46,13 @@ import kotlin.math.abs
  */
 class MultiCameraClient(ctx: Context, callback: IDeviceConnectCallBack?) {
     private var mUsbMonitor: USBMonitor? = null
+    private var filterList:List<DeviceFilter>?=null
     private val mMainHandler by lazy {
         Handler(Looper.getMainLooper())
     }
 
     init {
+        filterList=DeviceFilter.getDeviceFilters(ctx, R.xml.default_device_filter)
         mUsbMonitor = USBMonitor(ctx, object : USBMonitor.OnDeviceConnectListener {
             /**
              * Called by receive usb device inserted broadcast
@@ -207,7 +210,14 @@ class MultiCameraClient(ctx: Context, callback: IDeviceConnectCallBack?) {
         list?.let {
             addDeviceFilters(it)
         }
-        return mUsbMonitor?.deviceList
+        val resultList=ArrayList<UsbDevice>()
+        mUsbMonitor?.deviceList?.forEach {device->
+            if (isUsbCamera(device) || isFilterDevice(filterList!!, device)) {
+                resultList.add(device)
+            }
+        }
+        return resultList
+
     }
 
     /**
