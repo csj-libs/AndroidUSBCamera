@@ -18,11 +18,13 @@ package com.jiangdg.ausbc.base
 import android.content.Context
 import android.graphics.SurfaceTexture
 import android.hardware.usb.UsbDevice
+import android.os.Build
 import android.util.AttributeSet
 import android.view.*
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.RelativeLayout
+import androidx.annotation.RequiresApi
 import com.jiangdg.ausbc.MultiCameraClient
 import com.jiangdg.ausbc.callback.*
 import com.jiangdg.ausbc.camera.CameraUVC
@@ -61,7 +63,7 @@ abstract class BaseCameraView : BaseView, ICameraStateCallBack {
         defStyleAttr
     )
 
-    override fun initView() {
+    override fun initView(context: Context, attrs: AttributeSet?) {
         when (val cameraView = getCameraView()) {
             is TextureView -> {
                 handleTextureView(cameraView)
@@ -96,9 +98,11 @@ abstract class BaseCameraView : BaseView, ICameraStateCallBack {
     protected fun registerMultiCamera() {
         if (mContext == null) return
         mCameraClient = MultiCameraClient(mContext!!, object : IDeviceConnectCallBack {
+            @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
             override fun onAttachDev(device: UsbDevice?) {
                 device ?: return
                 context?.let {
+
                     if (mCameraMap.containsKey(device.deviceId)) {
                         return
                     }
@@ -120,7 +124,7 @@ abstract class BaseCameraView : BaseView, ICameraStateCallBack {
                     if (xml != null) {
                         val defaultDeviceList = CameraUtils.getDeviceFiltersFromXml(mContext, xml!!)
                         defaultDeviceList.forEach { tmp ->
-                            if ((tmp.mVendorId == device.vendorId && tmp.mProductId == device.productId)||(tmp.mSubclass == device.deviceSubclass && tmp.mClass == device.deviceClass)) {
+                            if (CameraUtils.isFilterDevice(defaultDeviceList,device)) {
                                 requestPermission(device)
                                 return@let
                             }
@@ -199,17 +203,14 @@ abstract class BaseCameraView : BaseView, ICameraStateCallBack {
     }
 
     fun getDeviceList(): MutableList<UsbDevice>? {
-        return if (xml != null) {
-            val defaultDeviceList = CameraUtils.getDeviceFiltersFromXml(mContext, xml!!)
-            mCameraClient?.getDeviceList(defaultDeviceList)
-        } else {
-            mCameraClient?.getDeviceList()
-        }
+        mCameraClient?.setDefaultUsbDeviceList(xml)
+        return mCameraClient?.getDeviceList()
     }
 
     fun setDefaultUsbDeviceList(xml: Int?) {
         if (xml == null) return
         this.xml = xml
+        mCameraClient?.setDefaultUsbDeviceList(xml)
     }
 
     private fun handleTextureView(textureView: TextureView) {

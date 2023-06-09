@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.jiangdg.demo
+package com.jiangdg.ausbc.base
 
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.content.Context
+import android.content.res.TypedArray
 import android.hardware.usb.UsbDevice
 import android.os.Build
 import android.os.Handler
@@ -27,32 +27,25 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.PopupWindow
 import androidx.lifecycle.*
 import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.materialdialogs.list.listItemsSingleChoice
 import com.jiangdg.ausbc.MultiCameraClient
-import com.jiangdg.ausbc.base.BaseCameraView
 import com.jiangdg.ausbc.callback.ICameraStateCallBack
 import com.jiangdg.ausbc.callback.ICaptureCallBack
 import com.jiangdg.ausbc.callback.IPlayCallBack
 import com.jiangdg.ausbc.camera.CameraUVC
-import com.jiangdg.ausbc.render.effect.EffectBlackWhite
-import com.jiangdg.ausbc.render.effect.EffectSoul
-import com.jiangdg.ausbc.render.effect.EffectZoom
-import com.jiangdg.ausbc.render.effect.bean.CameraEffect
+import com.jiangdg.ausbc.camera.bean.CameraRequest
+import com.jiangdg.ausbc.databinding.ViewCameraBinding
+import com.jiangdg.ausbc.render.env.RotateType
 import com.jiangdg.ausbc.utils.ToastUtils
 import com.jiangdg.ausbc.utils.bus.BusKey
 import com.jiangdg.ausbc.utils.bus.EventBus
 import com.jiangdg.ausbc.widget.AspectRatioTextureView
 import com.jiangdg.ausbc.widget.CaptureMediaView
 import com.jiangdg.ausbc.widget.IAspectRatio
-import com.jiangdg.demo.EffectListDialog.Companion.KEY_ANIMATION
-import com.jiangdg.demo.EffectListDialog.Companion.KEY_FILTER
-import com.jiangdg.demo.databinding.DialogMoreBinding
-import com.jiangdg.demo.databinding.ViewCameraBinding
-import com.jiangdg.utils.MMKVUtils
 import java.util.*
+import com.jiangdg.ausbc.R
 
 /** CameraFragment Usage Demo
  *
@@ -60,9 +53,9 @@ import java.util.*
  */
 class CameraView : BaseCameraView, View.OnClickListener,
     LifecycleOwner, LifecycleEventObserver {
-    private var mMultiCameraDialog: MultiCameraDialog? = null
-    private lateinit var mMoreBindingView: DialogMoreBinding
-    private var mMoreMenu: PopupWindow? = null
+    private var captureRawImage: Boolean = false
+    private var rawPreviewData: Boolean = false
+    private var aspectRatioShow: Boolean = true
     private var isCapturingVideoOrAudio: Boolean = false
     private var isPlayingMic: Boolean = false
     private var mRecTimer: Timer? = null
@@ -73,37 +66,10 @@ class CameraView : BaseCameraView, View.OnClickListener,
 
 
     enum class CameraState {
-        OPEN, CLOSE, ERROR
+        OPEN, CLOSE, ERROR, READY
     }
 
     private var listener: ((CameraState, String) -> Unit)? = null
-    private val mEffectDataList by lazy {
-        arrayListOf(
-            CameraEffect.NONE_FILTER,
-            CameraEffect(
-                EffectBlackWhite.ID,
-                "BlackWhite",
-                CameraEffect.CLASSIFY_ID_FILTER,
-                effect = EffectBlackWhite(mContext),
-                coverResId = R.mipmap.filter0
-            ),
-            CameraEffect.NONE_ANIMATION,
-            CameraEffect(
-                EffectZoom.ID,
-                "Zoom",
-                CameraEffect.CLASSIFY_ID_ANIMATION,
-                effect = EffectZoom(mContext),
-                coverResId = R.mipmap.filter2
-            ),
-            CameraEffect(
-                EffectSoul.ID,
-                "Soul",
-                CameraEffect.CLASSIFY_ID_ANIMATION,
-                effect = EffectSoul(mContext),
-                coverResId = R.mipmap.filter1
-            ),
-        )
-    }
 
     private val mMainHandler: Handler by lazy {
         Handler(Looper.getMainLooper()) {
@@ -128,7 +94,14 @@ class CameraView : BaseCameraView, View.OnClickListener,
     private var mCameraMode = CaptureMediaView.CaptureMode.MODE_CAPTURE_PIC
 
     private lateinit var mViewBinding: ViewCameraBinding
-    private var deviceFilterXml:Int?=null
+    private var deviceFilterXml: Int? = null
+    private var previewWidth: Int = 1024
+    private var previewHeight: Int = 768
+    private var defaultRotateType: RotateType = RotateType.ANGLE_0
+    private var renderMode: CameraRequest.RenderMode = CameraRequest.RenderMode.OPENGL
+    private var audioSource: CameraRequest.AudioSource = CameraRequest.AudioSource.SOURCE_SYS_MIC
+    private var format: CameraRequest.PreviewFormat = CameraRequest.PreviewFormat.FORMAT_MJPEG
+
     constructor(context: Context) : super(context)
 
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
@@ -143,84 +116,137 @@ class CameraView : BaseCameraView, View.OnClickListener,
         isAlive = true
     }
 
-    override fun initView() {
-        super.initView()
+    @SuppressLint("Recycle")
+    override fun initView(context: Context, attrs: AttributeSet?) {
+        super.initView(context, attrs)
+        val typedArray: TypedArray = context.obtainStyledAttributes(attrs, R.styleable.CameraView)
+        deviceFilterXml = typedArray.getResourceId(
+            R.styleable.CameraView_defaultUsbXml,
+            -1
+        )
+        if (deviceFilterXml == null || deviceFilterXml!! < 0) deviceFilterXml = null
+        previewWidth = typedArray.getInt(
+            R.styleable.CameraView_previewWidth,
+            1024
+        )
+        previewHeight = typedArray.getInt(
+            R.styleable.CameraView_previewHeight,
+            768
+        )
+        val tmpRenderMode = typedArray.getInt(
+            R.styleable.CameraView_renderMode,
+            1
+        )
+        when (tmpRenderMode) {
+            1 -> {
+                renderMode = CameraRequest.RenderMode.OPENGL
+            }
+            2 -> {
+                renderMode = CameraRequest.RenderMode.NORMAL
+            }
+        }
+        val tmpRotateType = typedArray.getInt(
+            R.styleable.CameraView_defaultRotateType,
+            1
+        )
+        when (tmpRotateType) {
+            1 -> {
+                defaultRotateType = RotateType.ANGLE_0
+            }
+            2 -> {
+                defaultRotateType = RotateType.ANGLE_90
+            }
+            3 -> {
+                defaultRotateType = RotateType.ANGLE_180
+            }
+            4 -> {
+                defaultRotateType = RotateType.ANGLE_270
+            }
+            5 -> {
+                defaultRotateType = RotateType.FLIP_UP_DOWN
+            }
+            6 -> {
+                defaultRotateType = RotateType.FLIP_LEFT_RIGHT
+            }
+        }
+        val tmpAudioSource = typedArray.getInt(
+            R.styleable.CameraView_audioSource,
+            1
+        )
+        when (tmpAudioSource) {
+            1 -> {
+                audioSource = CameraRequest.AudioSource.SOURCE_SYS_MIC
+            }
+            2 -> {
+                audioSource = CameraRequest.AudioSource.SOURCE_DEV_MIC
+            }
+            3 -> {
+                audioSource = CameraRequest.AudioSource.SOURCE_AUTO
+            }
+        }
+        val tmpFormat = typedArray.getInt(
+            R.styleable.CameraView_format,
+            1
+        )
+        when (tmpFormat) {
+            1 -> {
+                format = CameraRequest.PreviewFormat.FORMAT_MJPEG
+            }
+            2 -> {
+                format = CameraRequest.PreviewFormat.FORMAT_MJPEG
+            }
+            3 -> {
+                format = CameraRequest.PreviewFormat.FORMAT_YUYV
+            }
+        }
+        aspectRatioShow = typedArray.getBoolean(
+            R.styleable.CameraView_aspectRatioShow,
+            true
+        )
+        captureRawImage = typedArray.getBoolean(
+            R.styleable.CameraView_captureRawImage,
+            false
+        )
+        rawPreviewData = typedArray.getBoolean(
+            R.styleable.CameraView_rawPreviewData,
+            false
+        )
+        typedArray.recycle()
+    }
+
+    override fun getCameraRequest(): CameraRequest {
+        return CameraRequest.Builder()
+            .setPreviewWidth(previewWidth)
+            .setPreviewHeight(previewHeight)
+            .setRenderMode(renderMode)
+            .setDefaultRotateType(defaultRotateType)
+            .setAudioSource(audioSource)
+            .setPreviewFormat(format)
+            .setAspectRatioShow(aspectRatioShow)
+            .setCaptureRawImage(captureRawImage)
+            .setRawPreviewData(rawPreviewData)
+            .create();
     }
 
     override fun initData() {
         super.initData()
-        deviceFilterXml= R.xml.default_device_filter1
-        setDefaultUsbDeviceList(deviceFilterXml)
+//        deviceFilterXml = R.xml.default_device_filter2
+        if (deviceFilterXml != null) {
+            setDefaultUsbDeviceList(deviceFilterXml)
+        }
         EventBus.with<Int>(BusKey.KEY_FRAME_RATE).observe(this) {
         }
 
         EventBus.with<Boolean>(BusKey.KEY_RENDER_READY).observe(this) { ready ->
             if (!ready) return@observe
-            getDefaultEffect()?.apply {
-                when (getClassifyId()) {
-                    CameraEffect.CLASSIFY_ID_FILTER -> {
-                        // check if need to set anim
-                        val animId = MMKVUtils.getInt(KEY_ANIMATION, -99)
-                        if (animId != -99) {
-                            mEffectDataList.find {
-                                it.id == animId
-                            }?.also {
-                                if (it.effect != null) {
-                                    addRenderEffect(it.effect!!)
-                                }
-                            }
-                        }
-                        // set effect
-                        val filterId = MMKVUtils.getInt(KEY_FILTER, -99)
-                        if (filterId != -99) {
-                            removeRenderEffect(this)
-                            mEffectDataList.find {
-                                it.id == filterId
-                            }?.also {
-                                if (it.effect != null) {
-                                    addRenderEffect(it.effect!!)
-                                }
-                            }
-                            return@apply
-                        }
-                        MMKVUtils.set(KEY_FILTER, getId())
-                    }
-                    CameraEffect.CLASSIFY_ID_ANIMATION -> {
-                        // check if need to set filter
-                        val filterId = MMKVUtils.getInt(KEY_ANIMATION, -99)
-                        if (filterId != -99) {
-                            mEffectDataList.find {
-                                it.id == filterId
-                            }?.also {
-                                if (it.effect != null) {
-                                    addRenderEffect(it.effect!!)
-                                }
-                            }
-                        }
-                        // set anim
-                        val animId = MMKVUtils.getInt(KEY_ANIMATION, -99)
-                        if (animId != -99) {
-                            removeRenderEffect(this)
-                            mEffectDataList.find {
-                                it.id == animId
-                            }?.also {
-                                if (it.effect != null) {
-                                    addRenderEffect(it.effect!!)
-                                }
-                            }
-                            return@apply
-                        }
-                        MMKVUtils.set(KEY_ANIMATION, getId())
-                    }
-                    else -> throw IllegalStateException("Unsupported classify")
-                }
-            }
+            listener?.invoke(CameraState.READY, "")
         }
     }
 
     override fun getDefaultCamera(): UsbDevice? {
         return super.getDefaultCamera()
     }
+
     override fun onCameraState(
         self: MultiCameraClient.ICamera,
         code: ICameraStateCallBack.State,
@@ -297,7 +323,7 @@ class CameraView : BaseCameraView, View.OnClickListener,
                 callback.invoke("", path)
             }
 
-        },path)
+        }, path)
     }
 
     fun captureVideo(path: String? = null, callback: (err: String, path: String?) -> Unit) {
@@ -354,7 +380,6 @@ class CameraView : BaseCameraView, View.OnClickListener,
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
-        mMultiCameraDialog?.hide()
         isAlive = false
     }
 
@@ -415,38 +440,12 @@ class CameraView : BaseCameraView, View.OnClickListener,
         }
     }
 
-    fun showEffectDialog() {
-        EffectListDialog(mContext as Activity).apply {
-            setData(mEffectDataList, object : EffectListDialog.OnEffectClickListener {
-                override fun onEffectClick(effect: CameraEffect) {
-                    mEffectDataList.find { it.id == effect.id }.also {
-                        if (it == null) {
-                            ToastUtils.show("set effect failed!")
-                            return@also
-                        }
-                        updateRenderEffect(it.classifyId, it.effect)
-                        // save to sp
-                        if (effect.classifyId == CameraEffect.CLASSIFY_ID_ANIMATION) {
-                            KEY_ANIMATION
-                        } else {
-                            KEY_FILTER
-                        }.also { key ->
-                            MMKVUtils.set(key, effect.id)
-                        }
-                    }
-                }
-            })
-            show()
-        }
-    }
-
     @SuppressLint("CheckResult")
     fun showResolutionDialog() {
         if (!isCameraOpened()) {
             ToastUtils.show("camera not worked!")
             return
         }
-        mMoreMenu?.dismiss()
         getAllPreviewSizes().let { previewSizes ->
             if (previewSizes.isNullOrEmpty()) {
                 ToastUtils.show("Get camera preview size failed")

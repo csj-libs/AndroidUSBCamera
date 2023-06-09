@@ -4,7 +4,10 @@ import android.content.Context
 import android.content.res.Configuration
 import android.graphics.SurfaceTexture
 import android.hardware.usb.UsbDevice
-import android.os.*
+import android.os.Handler
+import android.os.HandlerThread
+import android.os.Looper
+import android.os.Message
 import android.view.Surface
 import com.jiangdg.ausbc.callback.*
 import com.jiangdg.ausbc.camera.bean.CameraRequest
@@ -27,16 +30,16 @@ import com.jiangdg.ausbc.utils.Logger
 import com.jiangdg.ausbc.utils.OpenGLUtils
 import com.jiangdg.ausbc.utils.Utils
 import com.jiangdg.ausbc.widget.IAspectRatio
-import com.jiangdg.usb.*
 import com.jiangdg.usb.DeviceFilter
+import com.jiangdg.usb.USBMonitor
 import com.jiangdg.uvc.UVCCamera
+import java.lang.ref.WeakReference
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingDeque
-import kotlin.collections.ArrayList
 import kotlin.math.abs
 
 /** Multi-road camera client
@@ -45,14 +48,18 @@ import kotlin.math.abs
  *      Modified for v3.3.0 by jiangdg on 2023/1/15
  */
 class MultiCameraClient(ctx: Context, callback: IDeviceConnectCallBack?) {
+    private var mWeakContext: WeakReference<Context>? = null
     private var mUsbMonitor: USBMonitor? = null
-    private var filterList:List<DeviceFilter>?=null
+    private var mFilterList: List<DeviceFilter>? = null
+    private var mDefaultUsbList: List<DeviceFilter>? = null
+    private var mXml: Int? = null
     private val mMainHandler by lazy {
         Handler(Looper.getMainLooper())
     }
 
     init {
-        filterList=DeviceFilter.getDeviceFilters(ctx, R.xml.default_device_filter)
+        mWeakContext = WeakReference(ctx)
+        mFilterList = DeviceFilter.getDeviceFilters(ctx, R.xml.default_device_filter)
         mUsbMonitor = USBMonitor(ctx, object : USBMonitor.OnDeviceConnectListener {
             /**
              * Called by receive usb device inserted broadcast
@@ -61,7 +68,10 @@ class MultiCameraClient(ctx: Context, callback: IDeviceConnectCallBack?) {
              */
             override fun onAttach(device: UsbDevice?) {
                 if (Utils.debugCamera) {
-                    Logger.i(TAG, "attach device name/pid/vid:${device?.deviceName}&${device?.productId}&${device?.vendorId} ")
+                    Logger.i(
+                        TAG,
+                        "attach device name/pid/vid:${device?.deviceName}&${device?.productId}&${device?.vendorId} "
+                    )
                 }
                 device ?: return
                 if (!isUsbCamera(device) && !isFilterDevice(ctx, device)) {
@@ -79,7 +89,10 @@ class MultiCameraClient(ctx: Context, callback: IDeviceConnectCallBack?) {
              */
             override fun onDetach(device: UsbDevice?) {
                 if (Utils.debugCamera) {
-                    Logger.i(TAG, "detach device name/pid/vid:${device?.deviceName}&${device?.productId}&${device?.vendorId} ")
+                    Logger.i(
+                        TAG,
+                        "detach device name/pid/vid:${device?.deviceName}&${device?.productId}&${device?.vendorId} "
+                    )
                 }
                 device ?: return
                 if (!isUsbCamera(device) && !isFilterDevice(ctx, device)) {
@@ -95,13 +108,17 @@ class MultiCameraClient(ctx: Context, callback: IDeviceConnectCallBack?) {
              *
              * @param device usb device info,see [UsbDevice]
              */
+
             override fun onConnect(
                 device: UsbDevice?,
                 ctrlBlock: USBMonitor.UsbControlBlock?,
                 createNew: Boolean
             ) {
                 if (Utils.debugCamera) {
-                    Logger.i(TAG, "connect device name/pid/vid:${device?.deviceName}&${device?.productId}&${device?.vendorId} ")
+                    Logger.i(
+                        TAG,
+                        "connect device name/pid/vid:${device?.deviceName}&${device?.productId}&${device?.vendorId} "
+                    )
                 }
                 device ?: return
                 if (!isUsbCamera(device) && !isFilterDevice(ctx, device)) {
@@ -119,7 +136,10 @@ class MultiCameraClient(ctx: Context, callback: IDeviceConnectCallBack?) {
              */
             override fun onDisconnect(device: UsbDevice?, ctrlBlock: USBMonitor.UsbControlBlock?) {
                 if (Utils.debugCamera) {
-                    Logger.i(TAG, "disconnect device name/pid/vid:${device?.deviceName}&${device?.productId}&${device?.vendorId} ")
+                    Logger.i(
+                        TAG,
+                        "disconnect device name/pid/vid:${device?.deviceName}&${device?.productId}&${device?.vendorId} "
+                    )
                 }
                 device ?: return
                 if (!isUsbCamera(device) && !isFilterDevice(ctx, device)) {
@@ -138,7 +158,10 @@ class MultiCameraClient(ctx: Context, callback: IDeviceConnectCallBack?) {
              */
             override fun onCancel(device: UsbDevice?) {
                 if (Utils.debugCamera) {
-                    Logger.i(TAG, "cancel device name/pid/vid:${device?.deviceName}&${device?.productId}&${device?.vendorId} ")
+                    Logger.i(
+                        TAG,
+                        "cancel device name/pid/vid:${device?.deviceName}&${device?.productId}&${device?.vendorId} "
+                    )
                 }
                 device ?: return
                 if (!isUsbCamera(device) && !isFilterDevice(ctx, device)) {
@@ -199,6 +222,14 @@ class MultiCameraClient(ctx: Context, callback: IDeviceConnectCallBack?) {
      * @return true permission granted
      */
     fun hasPermission(device: UsbDevice?) = mUsbMonitor?.hasPermission(device)
+    fun setDefaultUsbDeviceList(xml: Int?) {
+        if (xml == null) return
+        this.mXml = xml
+        val context = mWeakContext?.get()
+        if (context != null&&mXml!=null) {
+            mDefaultUsbList = DeviceFilter.getDeviceFilters(context, mXml!!)
+        }
+    }
 
     /**
      * Get device list
@@ -210,11 +241,16 @@ class MultiCameraClient(ctx: Context, callback: IDeviceConnectCallBack?) {
         list?.let {
             addDeviceFilters(it)
         }
-        val resultList=ArrayList<UsbDevice>()
-        mUsbMonitor?.deviceList?.forEach {device->
-            if (isUsbCamera(device) || isFilterDevice(filterList!!, device)) {
+        val resultList = ArrayList<UsbDevice>()
+        mUsbMonitor?.deviceList?.forEach { device ->
+            if (mDefaultUsbList != null && mDefaultUsbList!!.isNotEmpty()) {
+                if (isFilterDevice(mDefaultUsbList!!, device)) {
+                    resultList.add(device)
+                }
+            } else if (isUsbCamera(device) || isFilterDevice(mFilterList!!, device)) {
                 resultList.add(device)
             }
+
         }
         return resultList
 
@@ -261,14 +297,14 @@ class MultiCameraClient(ctx: Context, callback: IDeviceConnectCallBack?) {
      * @property device see [UsbDevice]
      * @constructor Create camera by inherit it
      */
-    abstract class ICamera(val ctx: Context, val device: UsbDevice): Handler.Callback,
+    abstract class ICamera(val ctx: Context, val device: UsbDevice) : Handler.Callback,
         H264EncodeProcessor.OnEncodeReadyListener {
         private var mMediaMuxer: Mp4Muxer? = null
         private var mEncodeDataCallBack: IEncodeDataCallBack? = null
         private var mCameraThread: HandlerThread? = null
         private var mAudioProcess: AbstractProcessor? = null
         private var mVideoProcess: AbstractProcessor? = null
-        private var mRenderManager: RenderManager?  = null
+        private var mRenderManager: RenderManager? = null
         private var mCameraView: Any? = null
         private var mCameraStateCallback: ICameraStateCallBack? = null
         protected var mContext = ctx
@@ -314,9 +350,10 @@ class MultiCameraClient(ctx: Context, callback: IDeviceConnectCallBack?) {
                         else -> {
                             null
                         }
-                    }.also { view->
-                        isNeedGLESRender = isGLESRender(renderMode == CameraRequest.RenderMode.OPENGL)
-                        if (! isNeedGLESRender && view != null) {
+                    }.also { view ->
+                        isNeedGLESRender =
+                            isGLESRender(renderMode == CameraRequest.RenderMode.OPENGL)
+                        if (!isNeedGLESRender && view != null) {
                             openCameraInternal(view)
                             return true
                         }
@@ -333,16 +370,23 @@ class MultiCameraClient(ctx: Context, callback: IDeviceConnectCallBack?) {
                             mPreviewDataCbList
                         }
                         mRenderManager = RenderManager(ctx, previewWidth, previewHeight, previewCb)
-                        mRenderManager?.startRenderScreen(screenWidth, screenHeight, surface, object : RenderManager.CameraSurfaceTextureListener {
-                            override fun onSurfaceTextureAvailable(surfaceTexture: SurfaceTexture?) {
-                                if (surfaceTexture == null) {
-                                    closeCamera()
-                                    postStateEvent(ICameraStateCallBack.State.ERROR, "create camera surface failed")
-                                    return
+                        mRenderManager?.startRenderScreen(
+                            screenWidth,
+                            screenHeight,
+                            surface,
+                            object : RenderManager.CameraSurfaceTextureListener {
+                                override fun onSurfaceTextureAvailable(surfaceTexture: SurfaceTexture?) {
+                                    if (surfaceTexture == null) {
+                                        closeCamera()
+                                        postStateEvent(
+                                            ICameraStateCallBack.State.ERROR,
+                                            "create camera surface failed"
+                                        )
+                                        return
+                                    }
+                                    openCameraInternal(surfaceTexture)
                                 }
-                                openCameraInternal(surfaceTexture)
-                            }
-                        })
+                            })
                         mRenderManager?.setRotateType(mCameraRequest!!.defaultRotateType)
                         if (mCacheEffectList.isNotEmpty()) {
                             mCacheEffectList.forEach { effect ->
@@ -377,7 +421,11 @@ class MultiCameraClient(ctx: Context, callback: IDeviceConnectCallBack?) {
                 }
                 MSG_CAPTURE_VIDEO_START -> {
                     (msg.obj as Triple<*, *, *>).apply {
-                        captureVideoStartInternal(first as? String, second as Long, third as ICaptureCallBack)
+                        captureVideoStartInternal(
+                            first as? String,
+                            second as Long,
+                            third as ICaptureCallBack
+                        )
                     }
                 }
                 MSG_CAPTURE_VIDEO_STOP -> {
@@ -398,9 +446,9 @@ class MultiCameraClient(ctx: Context, callback: IDeviceConnectCallBack?) {
         protected abstract fun captureImageInternal(savePath: String?, callback: ICaptureCallBack)
 
         protected open fun getAudioStrategy(): IAudioStrategy? {
-            return when(mCameraRequest?.audioSource) {
+            return when (mCameraRequest?.audioSource) {
                 CameraRequest.AudioSource.SOURCE_AUTO -> {
-                    if (isMicSupported(device) && mCtrlBlock!=null) {
+                    if (isMicSupported(device) && mCtrlBlock != null) {
                         if (Utils.debugCamera) {
                             Logger.i(TAG, "Audio record by using device internal mic")
                         }
@@ -413,7 +461,7 @@ class MultiCameraClient(ctx: Context, callback: IDeviceConnectCallBack?) {
                     }
                 }
                 CameraRequest.AudioSource.SOURCE_DEV_MIC -> {
-                    if (isMicSupported(device) && mCtrlBlock!=null) {
+                    if (isMicSupported(device) && mCtrlBlock != null) {
                         if (Utils.debugCamera) {
                             Logger.i(TAG, "Audio record by using device internal mic")
                         }
@@ -438,7 +486,8 @@ class MultiCameraClient(ctx: Context, callback: IDeviceConnectCallBack?) {
          *
          * @return default depend on device opengl version, >=2.0 is true
          */
-        private fun isGLESRender(isGlesRenderOpen: Boolean): Boolean =isGlesRenderOpen && OpenGLUtils.isGlEsSupported(ctx)
+        private fun isGLESRender(isGlesRenderOpen: Boolean): Boolean =
+            isGlesRenderOpen && OpenGLUtils.isGlEsSupported(ctx)
 
         /**
          * Init encode processor
@@ -449,7 +498,7 @@ class MultiCameraClient(ctx: Context, callback: IDeviceConnectCallBack?) {
         protected fun initEncodeProcessor(previewWidth: Int, previewHeight: Int) {
             releaseEncodeProcessor()
             // create audio process
-            getAudioStrategy()?.let { audio->
+            getAudioStrategy()?.let { audio ->
                 AACEncodeProcessor(audio)
             }?.also { processor ->
                 mAudioProcess = processor
@@ -458,7 +507,8 @@ class MultiCameraClient(ctx: Context, callback: IDeviceConnectCallBack?) {
             mContext.resources.configuration.orientation.let { orientation ->
                 orientation == Configuration.ORIENTATION_PORTRAIT
             }.also { isPortrait ->
-                mVideoProcess = H264EncodeProcessor(previewWidth, previewHeight, isNeedGLESRender, isPortrait)
+                mVideoProcess =
+                    H264EncodeProcessor(previewWidth, previewHeight, isNeedGLESRender, isPortrait)
             }
         }
 
@@ -487,12 +537,12 @@ class MultiCameraClient(ctx: Context, callback: IDeviceConnectCallBack?) {
          * @param mp3Path  mp3 save path
          * @param callBack record status, see [ICaptureCallBack]
          */
-        fun captureAudioStart(callBack: ICaptureCallBack, mp3Path: String?=null) {
-            if (! CameraUtils.hasAudioPermission(mContext)) {
+        fun captureAudioStart(callBack: ICaptureCallBack, mp3Path: String? = null) {
+            if (!CameraUtils.hasAudioPermission(mContext)) {
                 callBack.onError("Has no audio permission")
                 return
             }
-            if (! CameraUtils.hasStoragePermission(mContext)) {
+            if (!CameraUtils.hasStoragePermission(mContext)) {
                 callBack.onError("Has no storage permission")
                 return
             }
@@ -517,7 +567,7 @@ class MultiCameraClient(ctx: Context, callback: IDeviceConnectCallBack?) {
          * @param callBack play mic status in real-time, see [IPlayCallBack]
          */
         fun startPlayMic(callBack: IPlayCallBack?) {
-            if (! CameraUtils.hasAudioPermission(mContext)) {
+            if (!CameraUtils.hasAudioPermission(mContext)) {
                 callBack?.onError("Has no audio permission")
                 return
             }
@@ -573,7 +623,7 @@ class MultiCameraClient(ctx: Context, callback: IDeviceConnectCallBack?) {
          * @param effect a effect, extending from [AbstractEffect]
          */
         fun removeRenderEffect(effect: AbstractEffect) {
-            val defaultId =  mCameraRequest?.defaultEffect?.getId()
+            val defaultId = mCameraRequest?.defaultEffect?.getId()
             if (effect.getId() == defaultId) {
                 mCameraRequest?.defaultEffect = null
             }
@@ -711,7 +761,11 @@ class MultiCameraClient(ctx: Context, callback: IDeviceConnectCallBack?) {
          * @param path video save path, default is DICM/Camera
          * @param durationInSec video file auto divide duration is seconds
          */
-        fun captureVideoStart(callBack: ICaptureCallBack, path: String? = null, durationInSec: Long = 0L) {
+        fun captureVideoStart(
+            callBack: ICaptureCallBack,
+            path: String? = null,
+            durationInSec: Long = 0L
+        ) {
             Triple(path, durationInSec, callBack).apply {
                 mCameraHandler?.obtainMessage(MSG_CAPTURE_VIDEO_START, this)?.sendToTarget()
             }
@@ -804,7 +858,7 @@ class MultiCameraClient(ctx: Context, callback: IDeviceConnectCallBack?) {
          * @param callBack preview data call back
          */
         fun removePreviewDataCallBack(callBack: IPreviewDataCallBack) {
-            if (! mPreviewDataCbList.contains(callBack)) {
+            if (!mPreviewDataCbList.contains(callBack)) {
                 return
             }
             mPreviewDataCbList.remove(callBack)
@@ -860,11 +914,16 @@ class MultiCameraClient(ctx: Context, callback: IDeviceConnectCallBack?) {
 
         fun isRecording() = mMediaMuxer?.isMuxerStarter() == true
 
-        fun isStreaming() = mVideoProcess?.isEncoding() == true || mAudioProcess?.isEncoding() == true
+        fun isStreaming() =
+            mVideoProcess?.isEncoding() == true || mAudioProcess?.isEncoding() == true
 
-        private fun captureVideoStartInternal(path: String?, durationInSec: Long, callBack: ICaptureCallBack) {
-            if (! isCameraOpened()) {
-                Logger.e(TAG ,"capture video failed, camera not opened")
+        private fun captureVideoStartInternal(
+            path: String?,
+            durationInSec: Long,
+            callBack: ICaptureCallBack
+        ) {
+            if (!isCameraOpened()) {
+                Logger.e(TAG, "capture video failed, camera not opened")
                 return
             }
             if (isRecording()) {
@@ -872,7 +931,7 @@ class MultiCameraClient(ctx: Context, callback: IDeviceConnectCallBack?) {
                 return
             }
             captureStreamStartInternal()
-            Mp4Muxer(mContext, callBack, path, durationInSec, mAudioProcess==null).apply {
+            Mp4Muxer(mContext, callBack, path, durationInSec, mAudioProcess == null).apply {
                 mVideoProcess?.setMp4Muxer(this, true)
                 mAudioProcess?.setMp4Muxer(this, false)
             }.also { muxer ->
@@ -889,8 +948,8 @@ class MultiCameraClient(ctx: Context, callback: IDeviceConnectCallBack?) {
         }
 
         private fun captureStreamStartInternal() {
-            if (! isCameraOpened()) {
-                Logger.e(TAG ,"capture stream failed, camera not opened")
+            if (!isCameraOpened()) {
+                Logger.e(TAG, "capture stream failed, camera not opened")
                 return
             }
             if (isStreaming()) {

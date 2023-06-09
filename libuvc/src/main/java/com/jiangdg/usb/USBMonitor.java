@@ -217,7 +217,6 @@ public final class USBMonitor {
 			mPermissionIntent = null;
 		}
 	}
-
 	public synchronized boolean isRegistered() {
 		return !destroyed && (mPermissionIntent != null);
 	}

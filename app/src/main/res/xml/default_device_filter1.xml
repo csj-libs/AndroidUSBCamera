@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <usb>
+	<usb-device product-name="SY 1080P camera" />
+	<usb-device product-name="USB 2.0 Camera" />
 	<usb-device class="14" subclass="9" />
 	<usb-device class="2" subclass="0" />
 	<usb-device class="6" subclass="-1" />
@@ -12,4 +14,9 @@
 	<usb-device product-id="5120" vendor-id="1409" />
 	<usb-device product-id="27648" vendor-id="2981" />
 	<usb-device product-id="1409" vendor-id="1287" />
+	<usb-device product-id="532" vendor-id="37000" />
+	<usb-device product-id="22599" vendor-id="3034" />
+	<usb-device product-id="532" vendor-id="37000" />
+	<usb-device product-id="37424" vendor-id="1443" />
+	<usb-device product-id="22599" vendor-id="3034" />
 </usb>

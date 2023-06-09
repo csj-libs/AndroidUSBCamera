@@ -37,7 +37,7 @@ abstract class BaseView : FrameLayout {
         getRootView(inflater, this).apply {
             mRootView = this
         }
-        initView()
+        initView(context,attrs)
         initData()
     }
 
@@ -69,7 +69,7 @@ abstract class BaseView : FrameLayout {
     }
 
     protected abstract fun getRootView(inflater: LayoutInflater, container: ViewGroup?): View?
-    protected open fun initView() {}
+    protected open fun initView(context: Context, attrs: AttributeSet?) {}
     protected open fun initData() {}
     protected open fun clear() {}
 }

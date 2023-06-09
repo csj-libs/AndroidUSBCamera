@@ -92,9 +92,10 @@
 
     </LinearLayout>
 
-    <com.jiangdg.demo.CameraView
+    <com.jiangdg.ausbc.base.CameraView
         android:id="@+id/cameraView"
         android:layout_width="512dp"
+        app:defaultUsbXml="@xml/default_device_filter2"
         android:layout_height="384dp"/>
 
 <!--    <com.jiangdg.demo.MultiCameraView-->

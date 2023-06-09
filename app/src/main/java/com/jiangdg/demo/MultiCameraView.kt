@@ -12,13 +12,12 @@ import com.chad.library.adapter.base.BaseQuickAdapter
 import com.chad.library.adapter.base.BaseViewHolder
 import com.jiangdg.ausbc.MultiCameraClient
 import com.jiangdg.ausbc.base.BaseMultiCameraView
-import com.jiangdg.ausbc.base.MultiCameraFragment
 import com.jiangdg.ausbc.callback.ICameraStateCallBack
 import com.jiangdg.ausbc.callback.ICaptureCallBack
 import com.jiangdg.ausbc.camera.CameraUVC
 import com.jiangdg.ausbc.camera.bean.CameraRequest
+import com.jiangdg.ausbc.databinding.ViewMultiCameraBinding
 import com.jiangdg.ausbc.utils.ToastUtils
-import com.jiangdg.demo.databinding.ViewMultiCameraBinding
 
 /** Multi-road camera demo
  *
@@ -107,8 +106,8 @@ class MultiCameraView : BaseMultiCameraView, ICameraStateCallBack{
     }
 
 
-    override fun initView() {
-        super.initView()
+    override fun initView(context: Context, attrs: AttributeSet?) {
+        super.initView(context,attrs)
         openDebug(true)
         mAdapter = CameraAdapter()
         mAdapter.setNewData(mCameraList)
