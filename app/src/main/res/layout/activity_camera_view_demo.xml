@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".CameraViewDemoActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/black"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:id="@+id/lensFacingBtn1"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:scaleType="centerCrop"
+            android:src="@mipmap/camera_switch" />
+
+        <ImageView
+            android:id="@+id/resolutionBtn"
+            style="@style/Camera2TopButtonStyle"
+            android:src="@mipmap/camera_resolution" />
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/modeSwitchLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="29dp"
+            android:layout_gravity="center"
+            android:layout_marginStart="30dp"
+            android:layout_marginTop="6dp"
+            android:layout_marginEnd="30dp"
+            app:layout_constraintEnd_toEndOf="@+id/controlPanelLayout"
+            app:layout_constraintStart_toStartOf="@+id/controlPanelLayout"
+            app:layout_constraintTop_toTopOf="@+id/controlPanelLayout">
+
+            <TextView
+                android:id="@+id/takePictureModeTv"
+                android:layout_width="wrap_content"
+                android:layout_height="0dp"
+                android:drawableBottom="@drawable/camera_bottom_dot_transparent"
+                android:drawablePadding="1dp"
+                android:gravity="center"
+                android:text="photo"
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/recordVideoModeTv"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:id="@+id/recordVideoModeTv"
+                android:layout_width="wrap_content"
+                android:layout_height="0dp"
+                android:layout_marginStart="20dp"
+                android:drawableBottom="@drawable/camera_bottom_dot_transparent"
+                android:gravity="center"
+                android:text="video"
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toEndOf="@id/takePictureModeTv"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:id="@+id/recordAudioModeTv"
+                android:layout_width="wrap_content"
+                android:layout_height="0dp"
+                android:layout_marginStart="20dp"
+                android:drawableBottom="@drawable/camera_bottom_dot_transparent"
+                android:gravity="center"
+                android:text="audio"
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toEndOf="@id/recordVideoModeTv"
+                app:layout_constraintTop_toTopOf="parent" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <ImageView
+            android:id="@+id/resultImageView"
+            android:layout_width="100dp"
+            android:layout_height="50dp"
+            android:adjustViewBounds="true"
+            android:scaleType="fitCenter" />
+
+    </LinearLayout>
+
+    <com.jiangdg.demo.CameraView
+        android:id="@+id/cameraView"
+        android:layout_width="512dp"
+        android:layout_height="384dp"/>
+
+<!--    <com.jiangdg.demo.MultiCameraView-->
+<!--        android:id="@+id/multiCameraView"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:visibility="visible"-->
+<!--        android:layout_height="0dp"-->
+<!--        android:layout_weight="1" />-->
+</LinearLayout>
