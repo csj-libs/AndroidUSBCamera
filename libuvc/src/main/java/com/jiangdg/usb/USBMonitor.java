@@ -1278,6 +1278,7 @@ public final class USBMonitor {
 		 * @param interface_id
 		 * @throws IllegalStateException
 		 */
+		@RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
 		public synchronized UsbInterface getInterface(final int interface_id) throws IllegalStateException {
 			return getInterface(interface_id, 0);
 		}

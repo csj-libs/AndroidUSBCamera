@@ -294,7 +294,7 @@ class MultiCameraClient(ctx: Context, callback: IDeviceConnectCallBack?) {
             SimpleDateFormat("yyyyMMddHHmmssSSS", Locale.getDefault())
         }
         protected val mCameraDir by lazy {
-            "${Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)}/Camera"
+            "${mContext.getExternalFilesDir("camera")}"
         }
 
         override fun handleMessage(msg: Message): Boolean {
@@ -940,8 +940,8 @@ class MultiCameraClient(ctx: Context, callback: IDeviceConnectCallBack?) {
 
         private fun getDefaultCameraRequest(): CameraRequest {
             return CameraRequest.Builder()
-                .setPreviewWidth(1280)
-                .setPreviewHeight(720)
+                .setPreviewWidth(1024)
+                .setPreviewHeight(768)
                 .create()
         }
     }

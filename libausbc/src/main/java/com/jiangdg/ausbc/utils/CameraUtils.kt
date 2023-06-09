@@ -92,7 +92,9 @@ object CameraUtils {
         }
         return hasMic
     }
-
+    fun getDeviceFiltersFromXml(  context:Context,   deviceFilterXmlId:Int): List<DeviceFilter> {
+        return DeviceFilter.getDeviceFilters(context, deviceFilterXmlId)
+    }
     /**
      * Filter needed usb device by according to filter regular
      *

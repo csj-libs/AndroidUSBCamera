@@ -158,6 +158,7 @@ class DemoFragment : CameraFragment(), View.OnClickListener, CaptureMediaView.On
         mViewBinding.resolutionBtn.setOnClickListener(this)
         mViewBinding.albumPreviewIv.setOnClickListener(this)
         mViewBinding.captureBtn.setOnViewClickListener(this)
+        mViewBinding.testBtn.setOnClickListener(this)
         mViewBinding.albumPreviewIv.setTheme(PreviewImageView.Theme.DARK)
         switchLayoutClick()
     }
@@ -459,6 +460,16 @@ class DemoFragment : CameraFragment(), View.OnClickListener, CaptureMediaView.On
                     mViewBinding.albumPreviewIv -> {
                         goToGalley()
                     }
+                    mViewBinding.testBtn -> {
+                        try {
+                            Intent(activity,CameraViewDemoActivity::class.java
+                            ).apply {
+                                startActivity(this)
+                            }
+                        } catch (e: Exception) {
+                            ToastUtils.show("open error: ${e.localizedMessage}")
+                        }
+                    }
                     // more settings
                     mMoreBindingView.multiplex, mMoreBindingView.multiplexText -> {
                         goToMultiplexActivity()
@@ -466,6 +477,7 @@ class DemoFragment : CameraFragment(), View.OnClickListener, CaptureMediaView.On
                     mMoreBindingView.contact, mMoreBindingView.contactText -> {
                         showContactDialog()
                     }
+
                     else -> {
                     }
                 }

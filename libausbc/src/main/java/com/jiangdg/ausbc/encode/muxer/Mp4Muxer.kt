@@ -21,7 +21,6 @@ import android.media.MediaCodec
 import android.media.MediaFormat
 import android.media.MediaMetadataRetriever
 import android.media.MediaMuxer
-import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
@@ -31,7 +30,6 @@ import com.jiangdg.ausbc.utils.Logger
 import com.jiangdg.ausbc.utils.MediaUtils
 import com.jiangdg.ausbc.utils.Utils
 import java.io.File
-import java.lang.Exception
 import java.nio.ByteBuffer
 import java.text.SimpleDateFormat
 import java.util.*
@@ -72,12 +70,12 @@ class Mp4Muxer(
         SimpleDateFormat("yyyyMMddHHmmssSSS", Locale.getDefault())
     }
     private val mCameraDir by lazy {
-        "${Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)}/Camera"
+        "${mContext?.getExternalFilesDir("Camera")?.path}"
     }
 
     init {
         this.mCaptureCallBack = callBack
-        this.mContext= context
+        this.mContext = context
         try {
             if (path.isNullOrEmpty()) {
                 val date = mDateFormat.format(System.currentTimeMillis())
@@ -264,7 +262,7 @@ class Mp4Muxer(
         values.put(MediaStore.Video.Media.SIZE, file.length())
         values.put(MediaStore.Video.Media.DURATION, getLocalVideoDuration(file.path))
         if (MediaUtils.isAboveQ()) {
-            val relativePath =  "${Environment.DIRECTORY_DCIM}${File.separator}Camera"
+            val relativePath = "${mContext?.getExternalFilesDir("Camera")?.path}"
             val dateExpires = (System.currentTimeMillis() + DateUtils.DAY_IN_MILLIS) / 1000
             values.put(MediaStore.Video.Media.RELATIVE_PATH, relativePath)
             values.put(MediaStore.Video.Media.DATE_EXPIRES, dateExpires)
@@ -279,7 +277,7 @@ class Mp4Muxer(
         return try {
             val mmr = MediaMetadataRetriever()
             mmr.setDataSource(filePath)
-            mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLong() ?:0L
+            mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLong() ?: 0L
         } catch (e: Exception) {
             e.printStackTrace()
             0L
