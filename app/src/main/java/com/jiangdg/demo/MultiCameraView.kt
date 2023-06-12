@@ -16,8 +16,8 @@ import com.jiangdg.ausbc.callback.ICameraStateCallBack
 import com.jiangdg.ausbc.callback.ICaptureCallBack
 import com.jiangdg.ausbc.camera.CameraUVC
 import com.jiangdg.ausbc.camera.bean.CameraRequest
-import com.jiangdg.ausbc.databinding.ViewMultiCameraBinding
 import com.jiangdg.ausbc.utils.ToastUtils
+import com.jiangdg.demo.databinding.ViewMultiCameraBinding
 
 /** Multi-road camera demo
  *

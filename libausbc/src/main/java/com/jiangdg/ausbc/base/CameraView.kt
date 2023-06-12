@@ -26,6 +26,7 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleObserver
@@ -37,7 +38,6 @@ import com.jiangdg.ausbc.callback.ICaptureCallBack
 import com.jiangdg.ausbc.callback.IPlayCallBack
 import com.jiangdg.ausbc.camera.CameraUVC
 import com.jiangdg.ausbc.camera.bean.CameraRequest
-import com.jiangdg.ausbc.databinding.ViewCameraBinding
 import com.jiangdg.ausbc.render.env.RotateType
 import com.jiangdg.ausbc.utils.ToastUtils
 import com.jiangdg.ausbc.utils.bus.BusKey
@@ -63,6 +63,7 @@ class CameraView : BaseCameraView, View.OnClickListener,
     private var mRecMinute = 0
     private var mRecHours = 0
     private var isAlive = false
+    private var view:View? =null
 
 
     enum class CameraState {
@@ -76,15 +77,15 @@ class CameraView : BaseCameraView, View.OnClickListener,
             when (it.what) {
                 WHAT_START_TIMER -> {
                     if (mRecSeconds % 2 != 0) {
-                        mViewBinding.recStateIv.visibility = View.VISIBLE
+                        view?.findViewById<View>(R.id.recStateIv)?.visibility = View.VISIBLE
                     } else {
-                        mViewBinding.recStateIv.visibility = View.INVISIBLE
+                        view?.findViewById<View>(R.id.recStateIv)?.visibility = View.INVISIBLE
                     }
-                    mViewBinding.recTimeTv.text = calculateTime(mRecSeconds, mRecMinute)
+                    view?.findViewById<TextView>(R.id.recTimeTv)?.text = calculateTime(mRecSeconds, mRecMinute)
                 }
                 WHAT_STOP_TIMER -> {
-                    mViewBinding.recTimerLayout.visibility = View.GONE
-                    mViewBinding.recTimeTv.text = calculateTime(0, 0)
+                    view?.findViewById<View>(R.id.recTimerLayout)?.visibility = View.GONE
+                    view?.findViewById<TextView>(R.id.recTimeTv)?.text = calculateTime(0, 0)
                 }
             }
             true
@@ -93,7 +94,6 @@ class CameraView : BaseCameraView, View.OnClickListener,
 
     private var mCameraMode = CaptureMediaView.CaptureMode.MODE_CAPTURE_PIC
 
-    private lateinit var mViewBinding: ViewCameraBinding
     private var deviceFilterXml: Int? = null
     private var previewWidth: Int = 1024
     private var previewHeight: Int = 768
@@ -283,12 +283,12 @@ class CameraView : BaseCameraView, View.OnClickListener,
     }
 
     override fun getCameraViewContainer(): ViewGroup {
-        return mViewBinding.cameraViewContainer
+        return view?.findViewById(R.id.cameraViewContainer)!!
     }
 
     override fun getRootView(inflater: LayoutInflater, container: ViewGroup?): View {
-        mViewBinding = ViewCameraBinding.inflate(inflater, container, true)
-        return mViewBinding.root
+      view=  inflater.inflate(R.layout.view_camera,container,true)
+        return view!!
     }
 
     override fun getGravity(): Int = Gravity.CENTER
@@ -306,7 +306,7 @@ class CameraView : BaseCameraView, View.OnClickListener,
         captureAudioStart(object : ICaptureCallBack {
             override fun onBegin() {
                 isCapturingVideoOrAudio = true
-                mViewBinding.recTimerLayout.visibility = View.VISIBLE
+                view?.findViewById<View>(R.id.recTimerLayout)?.visibility = View.VISIBLE
                 startMediaTimer()
             }
 
@@ -318,7 +318,7 @@ class CameraView : BaseCameraView, View.OnClickListener,
 
             override fun onComplete(path: String?) {
                 isCapturingVideoOrAudio = false
-                mViewBinding.recTimerLayout.visibility = View.GONE
+                view?.findViewById<View>(R.id.recTimerLayout)?.visibility = View.GONE
                 stopMediaTimer()
                 callback.invoke("", path)
             }
@@ -338,7 +338,7 @@ class CameraView : BaseCameraView, View.OnClickListener,
         captureVideoStart(object : ICaptureCallBack {
             override fun onBegin() {
                 isCapturingVideoOrAudio = true
-                mViewBinding.recTimerLayout.visibility = View.VISIBLE
+                view?.findViewById<View>(R.id.recTimerLayout)?.visibility = View.VISIBLE
                 startMediaTimer()
             }
 
@@ -351,7 +351,7 @@ class CameraView : BaseCameraView, View.OnClickListener,
             override fun onComplete(path: String?) {
                 ToastUtils.show(path ?: "")
                 isCapturingVideoOrAudio = false
-                mViewBinding.recTimerLayout.visibility = View.GONE
+                view?.findViewById<View>(R.id.recTimerLayout)?.visibility = View.GONE
                 stopMediaTimer()
                 callback.invoke("", path)
             }

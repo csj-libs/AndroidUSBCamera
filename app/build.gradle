@@ -60,9 +60,9 @@ dependencies {
     implementation "com.tencent.bugly:nativecrashreport:$bugly_native_version"
 
     implementation project(':libutils')
-
     // For debug online
     implementation project(':libausbc')
+//    implementation 'com.github.csj-libs:AndroidUSBCamera:1.0.4'
     implementation "com.afollestad.material-dialogs:core:$dialog_version"
     // demo
 //    implementation 'com.github.jiangdongguo.AndroidUSBCamera:libausbc:3.3.3'
