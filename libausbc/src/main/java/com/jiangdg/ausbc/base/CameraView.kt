@@ -19,7 +19,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.TypedArray
 import android.hardware.usb.UsbDevice
-import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.AttributeSet
@@ -27,10 +26,12 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.lifecycle.*
-import com.afollestad.materialdialogs.MaterialDialog
-import com.afollestad.materialdialogs.list.listItemsSingleChoice
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.LifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import com.jiangdg.ausbc.MultiCameraClient
+import com.jiangdg.ausbc.R
 import com.jiangdg.ausbc.callback.ICameraStateCallBack
 import com.jiangdg.ausbc.callback.ICaptureCallBack
 import com.jiangdg.ausbc.callback.IPlayCallBack
@@ -45,7 +46,6 @@ import com.jiangdg.ausbc.widget.AspectRatioTextureView
 import com.jiangdg.ausbc.widget.CaptureMediaView
 import com.jiangdg.ausbc.widget.IAspectRatio
 import java.util.*
-import com.jiangdg.ausbc.R
 
 /** CameraFragment Usage Demo
  *
@@ -383,98 +383,8 @@ class CameraView : BaseCameraView, View.OnClickListener,
         isAlive = false
     }
 
-    fun showDeviceDialog() {
-
-        getCurrentCamera()?.let { strategy ->
-            if (strategy is CameraUVC) {
-                showUsbDevicesDialog(getDeviceList(), strategy.getUsbDevice())
-                return
-            }
-        }
-    }
-
     override fun onClick(v: View?) {
 
-    }
-
-    @SuppressLint("CheckResult")
-    private fun showUsbDevicesDialog(
-        usbDeviceList: MutableList<UsbDevice>?,
-        curDevice: UsbDevice?
-    ) {
-        if (usbDeviceList.isNullOrEmpty()) {
-            ToastUtils.show("Get usb device failed")
-            return
-        }
-        val list = arrayListOf<String>()
-        var selectedIndex: Int = -1
-        for (index in (0 until usbDeviceList.size)) {
-            val dev = usbDeviceList[index]
-            val devName =
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !dev.productName.isNullOrEmpty()) {
-                    "${dev.productName}(${curDevice?.deviceId})"
-                } else {
-                    dev.deviceName
-                }
-            val curDevName =
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !curDevice?.productName.isNullOrEmpty()) {
-                    "${curDevice!!.productName}(${curDevice.deviceId})"
-                } else {
-                    curDevice?.deviceName
-                }
-            if (devName == curDevName) {
-                selectedIndex = index
-            }
-            list.add(devName)
-        }
-        MaterialDialog(mContext).show {
-            listItemsSingleChoice(
-                items = list,
-                initialSelection = selectedIndex
-            ) { dialog, index, text ->
-                if (selectedIndex == index) {
-                    return@listItemsSingleChoice
-                }
-                switchCamera(usbDeviceList[index])
-            }
-        }
-    }
-
-    @SuppressLint("CheckResult")
-    fun showResolutionDialog() {
-        if (!isCameraOpened()) {
-            ToastUtils.show("camera not worked!")
-            return
-        }
-        getAllPreviewSizes().let { previewSizes ->
-            if (previewSizes.isNullOrEmpty()) {
-                ToastUtils.show("Get camera preview size failed")
-                return
-            }
-            val list = arrayListOf<String>()
-            var selectedIndex: Int = -1
-            for (index in (0 until previewSizes.size)) {
-                val w = previewSizes[index].width
-                val h = previewSizes[index].height
-                getCurrentPreviewSize()?.apply {
-                    if (width == w && height == h) {
-                        selectedIndex = index
-                    }
-                }
-                list.add("$w x $h")
-            }
-            MaterialDialog(mContext).show {
-                listItemsSingleChoice(
-                    items = list,
-                    initialSelection = selectedIndex
-                ) { dialog, index, text ->
-                    if (selectedIndex == index) {
-                        return@listItemsSingleChoice
-                    }
-                    updateResolution(previewSizes[index].width, previewSizes[index].height)
-                }
-            }
-        }
     }
 
 
@@ -618,4 +528,15 @@ class CameraView : BaseCameraView, View.OnClickListener,
             }
         }
     }
+
+    fun getCurrentDevice(): UsbDevice? {
+        getCurrentCamera()?.let { strategy ->
+            if (strategy is CameraUVC) {
+                return strategy.getUsbDevice()
+            }
+        }
+        return null
+    }
+
+
 }

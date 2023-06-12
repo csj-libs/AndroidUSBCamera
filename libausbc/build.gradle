@@ -40,7 +40,7 @@ dependencies {
     implementation "com.google.android.material:material:${materialVersion}"
     api 'com.elvishew:xlog:1.11.0'
 //    implementation fileTree("libs")
-    implementation "com.afollestad.material-dialogs:core:$dialog_version"
+//
     implementation project(path: ':libuvc')
     api project(path: ':libnative')
 }

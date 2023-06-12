@@ -267,7 +267,7 @@ abstract class BaseCameraView : BaseView, ICameraStateCallBack {
      *
      * @return current camera, see [MultiCameraClient.ICamera]
      */
-    protected fun getCurrentCamera(): MultiCameraClient.ICamera? {
+     fun getCurrentCamera(): MultiCameraClient.ICamera? {
         return try {
             mCurrentCamera?.get(2, TimeUnit.SECONDS)
         } catch (e: Exception) {
@@ -325,7 +325,7 @@ abstract class BaseCameraView : BaseView, ICameraStateCallBack {
      *
      * @param usbDevice camera usb device
      */
-    protected fun switchCamera(usbDevice: UsbDevice) {
+    fun switchCamera(usbDevice: UsbDevice) {
         getCurrentCamera()?.closeCamera()
         try {
             Thread.sleep(500)
@@ -348,7 +348,7 @@ abstract class BaseCameraView : BaseView, ICameraStateCallBack {
      * @param width camera preview width
      * @param height camera preview height
      */
-    protected fun updateResolution(width: Int, height: Int) {
+    fun updateResolution(width: Int, height: Int) {
         getCurrentCamera()?.updateResolution(width, height)
     }
 
@@ -358,7 +358,7 @@ abstract class BaseCameraView : BaseView, ICameraStateCallBack {
      * @param aspectRatio preview size aspect ratio,
      *                      null means getting all preview sizes
      */
-    protected fun getAllPreviewSizes(aspectRatio: Double? = null) =
+    fun getAllPreviewSizes(aspectRatio: Double? = null) =
         getCurrentCamera()?.getAllPreviewSizes(aspectRatio)
 
     /**
@@ -490,7 +490,7 @@ abstract class BaseCameraView : BaseView, ICameraStateCallBack {
      *
      * @return camera preview size, see [PreviewSize]
      */
-    protected fun getCurrentPreviewSize(): PreviewSize? {
+    fun getCurrentPreviewSize(): PreviewSize? {
         return getCurrentCamera()?.getCameraRequest()?.let {
             PreviewSize(it.previewWidth, it.previewHeight)
         }
