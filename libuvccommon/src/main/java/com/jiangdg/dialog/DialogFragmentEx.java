@@ -19,12 +19,4 @@ public abstract class DialogFragmentEx extends DialogFragment {
 		}
 	}
 
-	@NonNull
-	protected Bundle requireArguments() throws IllegalStateException {
-		final Bundle args = getArguments();
-		if (args == null) {
-			throw new IllegalStateException();
-		}
-		return args;
-	}
 }

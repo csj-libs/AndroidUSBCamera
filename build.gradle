@@ -45,4 +45,7 @@ ext {
     dialog_version= '3.2.1'
     bugly_version = '3.4.4'
     bugly_native_version = '3.9.0'
+    recyclerview_version = '1.0.0'
+    preference_version = '1.0.0'
+    xlog_version = '1.11.0'
 }
