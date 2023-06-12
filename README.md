@@ -49,7 +49,7 @@ allprojects {
 
 ```groovy
 dependencies {
-    implementation 'com.github.jiangdongguo.AndroidUSBCamera:libausbc:latest_tag'
+	implementation 'com.github.csj-libs:AndroidUSBCamera:V1.0.0'
 }
 ```
 

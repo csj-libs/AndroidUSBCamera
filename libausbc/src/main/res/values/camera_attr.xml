@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="CameraView">
+        <attr name="defaultUsbXml" format="reference" />
+        <attr name="previewWidth" format="integer" />
+        <attr name="previewHeight" format="integer" />
+        <attr name="renderMode" format="enum">
+            <enum name="opengl" value="1"/>
+            <enum name="normal" value="2"/>
+        </attr>
+        <attr name="defaultRotateType" format="enum">
+            <enum name="ANGLE_0" value="1"/>
+            <enum name="ANGLE_90" value="2"/>
+            <enum name="ANGLE_180" value="3"/>
+            <enum name="ANGLE_270" value="4"/>
+            <enum name="FLIP_UP_DOWN" value="5"/>
+            <enum name="FLIP_LEFT_RIGHT" value="6"/>
+        </attr>
+        <attr name="audioSource" format="enum">
+            <enum name="NONE" value="1"/>
+            <enum name="SOURCE_SYS_MIC" value="2"/>
+            <enum name="SOURCE_DEV_MIC" value="3"/>
+            <enum name="SOURCE_AUTO" value="4"/>
+        </attr>
+        <attr name="format" format="enum">
+            <enum name="FORMAT_MJPEG" value="1"/>
+            <enum name="FORMAT_YUYV" value="2"/>
+        </attr>
+        <attr name="aspectRatioShow" format="boolean" />
+        <attr name="captureRawImage" format="boolean" />
+        <attr name="rawPreviewData" format="boolean" />
+    </declare-styleable>
+
+</resources>

@@ -69,7 +69,7 @@ abstract class ICameraStrategy(context: Context) : Handler.Callback {
         SimpleDateFormat("yyyyMMddHHmmssSSS", Locale.getDefault())
     }
     protected val mCameraDir by lazy {
-        "${Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)}/Camera"
+        "${mContext?.getExternalFilesDir("Camera")?.path}"
     }
 
     private val mDeviceOrientation = object : OrientationEventListener(context) {

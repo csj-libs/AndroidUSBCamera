@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <usb>
-<!--	<usb-device class="239" subclass="2" />	&lt;!&ndash; all device of UVC &ndash;&gt;-->
+	<usb-device class="239" subclass="2" />	<!-- all device of UVC -->
 	<!-- a few android 9.0 -->
 	<usb-device class="14" subclass="9" />
 	<usb-device class="2" subclass="0" />

@@ -6,6 +6,9 @@ import android.content.pm.PackageManager
 import android.hardware.usb.UsbConstants
 import android.hardware.usb.UsbDevice
 import android.media.Image
+import android.os.Build
+import android.text.TextUtils
+import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import com.jiangdg.ausbc.R
 import com.jiangdg.usb.DeviceFilter
@@ -92,7 +95,9 @@ object CameraUtils {
         }
         return hasMic
     }
-
+    fun getDeviceFiltersFromXml(  context:Context,   deviceFilterXmlId:Int): List<DeviceFilter> {
+        return DeviceFilter.getDeviceFilters(context, deviceFilterXmlId)
+    }
     /**
      * Filter needed usb device by according to filter regular
      *
@@ -100,13 +105,20 @@ object CameraUtils {
      * @param usbDevice see [UsbDevice]
      * @return true find success
      */
+    
     fun isFilterDevice(context: Context?, usbDevice: UsbDevice?): Boolean {
         return isFilterDevice(DeviceFilter.getDeviceFilters(context, R.xml.default_device_filter),usbDevice)
     }
+    
     fun isFilterDevice(filterList: List<DeviceFilter>?, usbDevice: UsbDevice?): Boolean {
         return filterList
             ?.find { devFilter ->
-                devFilter.mProductId == usbDevice?.productId && devFilter.mVendorId == usbDevice.vendorId
+                var flag=devFilter.mProductId>=0  && devFilter.mVendorId>0&&devFilter.mProductId == usbDevice?.productId && devFilter.mVendorId == usbDevice.vendorId
+                flag=flag or (devFilter.mClass>=0 && devFilter.mClass==usbDevice?.deviceClass && devFilter.mSubclass==usbDevice.deviceSubclass)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    flag=flag or (!TextUtils.isEmpty(devFilter.mProductName) && (devFilter.mProductName?.equals(usbDevice?.productName?:"")==true))
+                }
+                flag
             }.let { dev ->
                 dev != null
             }
