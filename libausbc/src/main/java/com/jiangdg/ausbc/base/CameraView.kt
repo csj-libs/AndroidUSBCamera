@@ -63,7 +63,7 @@ class CameraView : BaseCameraView, View.OnClickListener,
     private var mRecMinute = 0
     private var mRecHours = 0
     private var isAlive = false
-    private var view: View? = null
+    private var view:View? =null
 
 
     enum class CameraState {
@@ -81,8 +81,7 @@ class CameraView : BaseCameraView, View.OnClickListener,
                     } else {
                         view?.findViewById<View>(R.id.recStateIv)?.visibility = View.INVISIBLE
                     }
-                    view?.findViewById<TextView>(R.id.recTimeTv)?.text =
-                        calculateTime(mRecSeconds, mRecMinute)
+                    view?.findViewById<TextView>(R.id.recTimeTv)?.text = calculateTime(mRecSeconds, mRecMinute)
                 }
                 WHAT_STOP_TIMER -> {
                     view?.findViewById<View>(R.id.recTimerLayout)?.visibility = View.GONE
@@ -292,7 +291,7 @@ class CameraView : BaseCameraView, View.OnClickListener,
     }
 
     override fun getRootView(inflater: LayoutInflater, container: ViewGroup?): View {
-        view = inflater.inflate(R.layout.view_camera, container, true)
+      view=  inflater.inflate(R.layout.view_camera,container,true)
         return view!!
     }
 
